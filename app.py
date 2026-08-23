@@ -104,16 +104,18 @@ for k, v in {"api_ready": False, "reviews": [], "last_result": None}.items():
 with st.sidebar:
     st.markdown("### 🔬 CODEX Settings")
     st.markdown("---")
-    api_key = st.text_input("Gemini API Key", type="password", placeholder="AIza…")
-    if api_key:
-        try:
-            genai.configure(api_key=api_key)
-            st.session_state.api_ready = True
-            st.success("✓ Connected", icon="🟢")
-        except Exception:
-            st.error("Invalid key")
+    
+    # Automatically authenticate using Streamlit secrets
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=api_key)
+        st.session_state.api_ready = True
+        st.success("✓ Connected securely", icon="🟢")
+    except KeyError:
+        st.error("API key not found in secrets.")
+        st.session_state.api_ready = False
     st.markdown("---")
-    model = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    model = st.selectbox("Model", ["gemini-3.5-flash", "gemini-3.1-pro-preview"])
     review_focus = st.multiselect(
         "Review focus",
         ["Bugs & errors", "Security vulnerabilities", "Performance",
