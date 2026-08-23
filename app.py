@@ -190,24 +190,35 @@ Code to review:
                 try:
                     model_obj = genai.GenerativeModel(
                         model,
-                        generation_config=genai.GenerationConfig(temperature=0.2, max_output_tokens=3000),
+                        generation_config=genai.GenerationConfig(
+                            temperature=0.2,
+                            max_output_tokens=3000,
+                            response_mime_type="application/json"
+                        ),
                     )
                     raw = model_obj.generate_content(prompt).text
-                    import re
-                    match = re.search(r'\{.*\}', raw, re.DOTALL)
-                    if match:
-                        result = json.loads(match.group())
-                        st.session_state.last_result = result
-                        st.session_state.reviews.append({
-                            "lang": language, "score": result.get("score", 0),
-                            "time": datetime.now().strftime("%H:%M"),
-                            "code": code_input[:100],
-                        })
-                        st.rerun()
-                    else:
-                        st.error("Could not parse review. Try again.")
+                    
+                    # Clean markdown code fences if present
+                    clean_json = raw.strip()
+                    if clean_json.startswith("```json"):
+                        clean_json = clean_json[7:]
+                    elif clean_json.startswith("```"):
+                        clean_json = clean_json[3:]
+                    if clean_json.endswith("```"):
+                        clean_json = clean_json[:-3]
+                    
+                    result = json.loads(clean_json.strip())
+                    
+                    st.session_state.last_result = result
+                    st.session_state.reviews.append({
+                        "lang": language,
+                        "score": result.get("score", 0),
+                        "time": datetime.now().strftime("%H:%M"),
+                        "code": code_input[:100],
+                    })
+                    st.rerun()
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"Review parsing error: {e}")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Output ────────────────────────────────────────────────────────────────────
